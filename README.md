@@ -10,9 +10,7 @@ Bem-vindo ao Projeto Envio Email! Este é um projeto de automação desenvolvido
 - [Instalação](#instalação)
 - [Como Usar](#como-usar)
 - [Exemplo de Uso](#exemplo-de-uso)
-- [Contribuição](#contribuição)
 - [Licença](#licença)
-- [Contato](#contato)
 
 ## Introdução
 
