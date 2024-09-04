@@ -37,29 +37,28 @@ Este projeto foi criado para automatizar o envio de emails para múltiplos desti
     cd projeto-envio-email
     ```
 
-2. Crie e ative um ambiente virtual (recomendado):
+2. Crie e ative um ambiente virtual e utilize o requirements.txt (recomendado):
     ```bash
     python -m venv venv
     source .venv/bin/activate  # No Windows, use `.venv\Scripts\activate`
     ```
 
-3. Instale as dependências listas na parte de tecnologias utilizadas:
-
 ## Como Usar
 
-1. Configuração:
-   - Configure as credenciais do servidor SMTP no arquivo `config.py`.
-   - Configure os destinatários e o conteúdo do email no arquivo `emails.py`.
-
-2. Execução:
    - Execute o script principal do projeto com interface:
      ```bash
-     python Envio de emails com interface.py
+     python Envio de emails com app.py
      ```
    -Ou execute o script principal do projeto sem interface:
      ```bash
-     python Envio de emails sem interface.py
+     python Envio de emails sem app.py
      ```
+
+   -Utilize a planilha base que se encontra em src/static para colocar os dados/emails;
+
+   -Cadastre uma conta com senha de app do google no sistema e faça login;
+
+   -Após isso, configure da melhor forma para envio, inicie e espere até começar os envios.
 
 ## Exemplo de Uso
 
