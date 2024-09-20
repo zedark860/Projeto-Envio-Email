@@ -1,6 +1,0 @@
-Erro ao enviar email para oversouls11@gmail.com às 09:22:33. Erro: [Errno 2] No such file or directory: 'c:\\Users\\suporte.2.WEBCERTIFICADOS\\Desktop\\Envio emails atual\\frontend\\src\\log\\send_success\\fin.envios.3@gmail.com_sucessos.txt'
-
-Erro ao enviar email para financeiro4@webcertificados.com.br às 09:23:06. Erro: [Errno 2] No such file or directory: 'c:\\Users\\suporte.2.WEBCERTIFICADOS\\Desktop\\Envio emails atual\\frontend\\src\\log\\send_success\\fin.envios.3@gmail.com_sucessos.txt'
-
-Erro ao enviar email para oversouls11@gmail.com às 09:27:13. Erro: [Errno 2] No such file or directory: 'c:\\Users\\suporte.2.WEBCERTIFICADOS\\Desktop\\Envio emails atual\\frontend\\src\\log\\send_success\\fin.envios.3@gmail.com_sucessos.txt'
-
