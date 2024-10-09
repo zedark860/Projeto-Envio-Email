@@ -102,6 +102,7 @@ class SenderEmailController(SenderEmailModel):
         email_and_server: dict[str, str] = {
             "gmail.com": "smtp.gmail.com",
             "webcertificados.com.br": "smtp.gmail.com",
+            "webcertificado.com.br": "smtp.gmail.com",
             "outlook.com": "smtp.office365.com",
             "hotmail.com": "smtp.live.com",
             "aol.com": "smtp.aol.com",
@@ -110,7 +111,7 @@ class SenderEmailController(SenderEmailModel):
         
         domain: str = self.data_user.email.split('@')[-1]
 
-        return email_and_server.get(domain, "Servidor não encontrado")  
+        return email_and_server.get(domain, "smtp.gmail.com")  
     
     
     def config_send_email(self, destination_email: str, copy_body_html: str) -> None:
