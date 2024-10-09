@@ -101,7 +101,7 @@ class SenderEmailController(SenderEmailModel):
     def type_verify_email(self) -> str:
         email_and_server: dict[str, str] = {
             "gmail.com": "smtp.gmail.com",
-            "webcertificados.com.br": "stmp.gmail.com",
+            "webcertificados.com.br": "smtp.gmail.com",
             "outlook.com": "smtp.office365.com",
             "hotmail.com": "smtp.live.com",
             "aol.com": "smtp.aol.com",
