@@ -13,8 +13,7 @@ from src.model.SenderEmailModel import SenderEmailModel
 from src.log.Log import Log
 
 class SenderEmailController(SenderEmailModel):
-    
-    # Não está sendo utilizado
+     
     @staticmethod
     def resource_path(relative_path):
         base_path = getattr(sys, '_MEIPASS', os.path.dirname(
@@ -22,10 +21,9 @@ class SenderEmailController(SenderEmailModel):
     
         return os.path.join(base_path, relative_path)
     
-    
     @staticmethod
-    def load_html(corpo_email_path: str):
-        with open(corpo_email_path, "r", encoding="utf-8") as file:
+    def load_html():
+        with open(SenderEmailController.resource_path("corpo_email.html"), "r", encoding="utf-8") as file:
             return file.read()
         
     
@@ -34,11 +32,10 @@ class SenderEmailController(SenderEmailModel):
         return random.randint(send_interval - 5, send_interval + 5)
     
     
-    def __init__(self, data_user: DataUserController, spreadsheet_path: str, html_path: str, email_send_quantity: int, send_interval: int, email_subject: str, email_title: str, email_message: str, whatsapp_redirect_number: str):
+    def __init__(self, data_user: DataUserController, spreadsheet_path: str, email_send_quantity: int, send_interval: int, email_subject: str, email_title: str, email_message: str, whatsapp_redirect_number: str):
         super().__init__(
             data_user=data_user,
-            spreadsheet_path=spreadsheet_path,
-            html_path=html_path,
+            spreadsheet_path=spreadsheet_path, 
             email_send_quantity=email_send_quantity, 
             send_interval=send_interval, 
             email_subject=email_subject, 
@@ -90,12 +87,10 @@ class SenderEmailController(SenderEmailModel):
         
         if name is not None or product is not None or protocol is not None:
             for key, value in aux_dict.items():
-                message_copy = message_copy.replace(key, value)
-                title_copy = title_copy.replace(key, value)
-                
-            link_whatsapp_copy: str = f"https://api.whatsapp.com/send?phone={self.whatsapp_redirect_number}&text=Ol%C3%A1!%20Vim%20pelo%20email%20e%20gostaria%20de%20tirar%20algumas%20d%C3%BAvidas"
+                self.email_message = self.email_message.replace(key, value)
+                self.email_title = self.email_title.replace(key, value)
 
-            return message_copy, title_copy, link_whatsapp_copy
+        return f"https://api.whatsapp.com/send?phone={self.whatsapp_redirect_number}&text=Ol%C3%A1!%20Vim%20pelo%20email%20e%20gostaria%20de%20tirar%20algumas%20d%C3%BAvidas"
     
     
     def type_verify_email(self) -> str:
@@ -110,12 +105,12 @@ class SenderEmailController(SenderEmailModel):
         
         domain: str = self.data_user.email.split('@')[-1]
 
-        return email_and_server.get(domain, "Servidor não encontrado")  
+        return email_and_server.get(domain, "Servidor não encontrado")    
     
     
     def config_send_email(self, destination_email: str, copy_body_html: str) -> None:
-        server_smtp = self.type_verify_email()
-        port_smtp = 587
+        server_smtp: str = self.type_verify_email()
+        port_smtp: int = 587
         
         msg = MIMEMultipart('alternative')
         msg['Subject'] = self.email_subject
@@ -150,7 +145,7 @@ class SenderEmailController(SenderEmailModel):
     
     
     def send_emails(self, log_signal: pyqtBoundSignal) -> None:
-        body_html_original: str = SenderEmailController.load_html(self.html_path)
+        body_html_original: str = SenderEmailController.load_html()
         destination_emails, df_emails = self.read_emails()
         
         for i, destination_email in enumerate(destination_emails):
@@ -161,16 +156,16 @@ class SenderEmailController(SenderEmailModel):
             message_copy, title_copy, link_whatsapp_copy = self.update_message(name, product, protocol)
             copy_body_html: str = self.replace_email_html(body_html_original, message_copy, title_copy, link_whatsapp_copy)
             self.config_send_email(destination_email, copy_body_html)
-            random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
             
             try:
                 df_emails.loc[i, self.list_columns[4]] = 'ENVIADO'
                 df_emails.to_excel(self.spreadsheet_path, index=False)
-                message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, None, random_interval)
+                message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, None, self.send_interval)
                 log_signal.emit(message_success)
-                time.sleep(random_interval)
+                time.sleep(random_interval)   
             except Exception as error:
                 df_emails.loc[i, self.list_columns[4]] = 'ERRO'
                 df_emails.to_excel(self.spreadsheet_path, index=False)
                 message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, error, None)
                 log_signal.emit(message_error)
+                time.sleep(self.send_interval)
