@@ -203,13 +203,13 @@ class SenderEmailController(SenderEmailModel):
             random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
             
             try:
-                df_emails.loc[i, self.list_columns[4]] = 'ENVIADO'
+                df_emails.loc[i, self.list_columns[5]] = 'ENVIADO'
                 df_emails.to_excel(self.spreadsheet_path, index=False)
                 message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, None, random_interval)
                 log_signal.emit(message_success)
                 time.sleep(random_interval)   
             except Exception as error:
-                df_emails.loc[i, self.list_columns[4]] = 'ERRO'
+                df_emails.loc[i, self.list_columns[5]] = 'ERRO'
                 df_emails.to_excel(self.spreadsheet_path, index=False)
                 message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, error, None)
                 log_signal.emit(message_error)
