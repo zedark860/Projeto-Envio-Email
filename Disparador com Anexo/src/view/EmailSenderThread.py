@@ -52,6 +52,7 @@ class EmailSenderThread(QThread):
             self.stop()
         except Exception as e:
             self.log_signal.emit(f'Erro ao iniciar o envio de e-mails: {str(e)}')
+            self.stop()
             
             
     def stop(self):

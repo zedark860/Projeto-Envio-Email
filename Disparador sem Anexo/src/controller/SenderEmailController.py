@@ -24,6 +24,11 @@ class SenderEmailController(SenderEmailModel):
     
     
     @staticmethod
+    def clean_text(text: str) -> str:
+        return text.replace('\xa0', ' ').encode('ascii', 'ignore').decode('ascii')
+    
+    
+    @staticmethod
     def load_html(corpo_email_path: str):
         with open(corpo_email_path, "r", encoding="utf-8") as file:
             return file.read()
@@ -45,7 +50,7 @@ class SenderEmailController(SenderEmailModel):
             email_title=email_title, 
             email_message=email_message, 
             whatsapp_redirect_number=whatsapp_redirect_number,
-            list_columns=['EMAIL', 'NOME', 'PROTOCOLO', 'PRODUTO', 'STATUS']
+            list_columns=['E-mail', 'Nome', 'Protocolo', 'Produto', 'STATUS']
         )
 
     
@@ -55,6 +60,8 @@ class SenderEmailController(SenderEmailModel):
         required_columns: list[str] = self.list_columns
         
         try:
+            df_emails.columns = required_columns
+            
             df_no_duplicates: pd.DataFrame = df_emails.drop_duplicates(
                 subset=self.list_columns, keep='first')
 
@@ -119,10 +126,10 @@ class SenderEmailController(SenderEmailModel):
         port_smtp = 587
         
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = self.email_subject
-        msg['From'] = self.data_user.email
-        msg['To'] = destination_email
-        msg.attach(MIMEText(copy_body_html, 'html'))
+        msg['Subject'] = self.clean_text(self.email_subject)
+        msg['From'] = self.clean_text(self.data_user.email)
+        msg['To'] = self.clean_text(destination_email)
+        msg.attach(MIMEText(self.clean_text(copy_body_html), 'html', 'utf-8'))
         
         with smtplib.SMTP(server_smtp, port_smtp) as server:
             server.starttls()
@@ -139,13 +146,13 @@ class SenderEmailController(SenderEmailModel):
         return copy_body_html
     
     
-    def write_on_console_and_txt(self, destination_email: str, destination_emails: list[str], validator: bool, i: int, error=None, interval_send_email=None) -> str:
+    def write_on_console_and_txt(self, destination_email: str, destination_emails: list[str], validator: bool, i: int, start_index: int=None, error=None, interval_send_email=None) -> str:
         if not validator:
             message: str = f"Erro ao enviar email para {destination_email} às {datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}. Erro: {error}\n"
             Log.write_error(self.data_user.email, message)
             return message
         
-        message: str = f"Email enviado para {destination_email} às {datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}\nTotal de emails enviados: {i + 1} de {len(destination_emails)} " + f"Intervalo de envio: {interval_send_email} segundos\n"
+        message: str = f"Email enviado para {destination_email} às {datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}\nTotal de emails enviados: {i + 1} de {len(destination_emails[start_index:])} " + f"Intervalo de envio: {interval_send_email} segundos\n"
         Log.write_success(self.data_user.email, message)
         return message
     
@@ -154,24 +161,28 @@ class SenderEmailController(SenderEmailModel):
         body_html_original: str = SenderEmailController.load_html(self.html_path)
         destination_emails, df_emails = self.read_emails()
         
-        for i, destination_email in enumerate(destination_emails):
+        last_sent_index: int = df_emails[df_emails[self.list_columns[4]].isin(['ENVIADO', 'ERRO'])].index.max()
+        start_index: int = (last_sent_index + 1) if pd.notna(last_sent_index) else 0
+        
+        for i, destination_email in enumerate(destination_emails[start_index:]):
             if (i + 1) > self.email_send_quantity:
                 break
             
-            name, product, protocol = self.get_name_product(df_emails, destination_email)
-            message_copy, title_copy, link_whatsapp_copy = self.update_message(name, product, protocol)
-            copy_body_html: str = self.replace_email_html(body_html_original, message_copy, title_copy, link_whatsapp_copy)
-            self.config_send_email(destination_email, copy_body_html)
-            random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
-            
             try:
+                name, product, protocol = self.get_name_product(df_emails, destination_email)
+                message_copy, title_copy, link_whatsapp_copy = self.update_message(name, product, protocol)
+                copy_body_html: str = self.replace_email_html(body_html_original, message_copy, title_copy, link_whatsapp_copy)
+                self.config_send_email(destination_email, copy_body_html)
+                random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
+            
                 df_emails.loc[i, self.list_columns[4]] = 'ENVIADO'
                 df_emails.to_excel(self.spreadsheet_path, index=False)
-                message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, None, random_interval)
+                message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, start_index, None, random_interval)
                 log_signal.emit(message_success)
                 time.sleep(random_interval)
             except Exception as error:
                 df_emails.loc[i, self.list_columns[4]] = 'ERRO'
                 df_emails.to_excel(self.spreadsheet_path, index=False)
-                message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, error, None)
+                message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, None, error, None)
                 log_signal.emit(message_error)
+                continue

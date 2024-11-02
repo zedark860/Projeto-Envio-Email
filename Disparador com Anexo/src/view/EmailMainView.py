@@ -83,8 +83,8 @@ class EmailMainView(QWidget):
 
         self.intervalo_envio_label = QLabel('Intervalo entre Envios (segundos):')  # Cria um rótulo para o campo de intervalo entre envios
         self.intervalo_envio_edit = QLineEdit()  # Cria um campo de entrada para o intervalo entre envios
-        self.intervalo_envio_edit.setPlaceholderText('30')  # Define um texto de espaço reservado para o campo de intervalo entre envios
-        self.intervalo_envio_edit.setValidator(QIntValidator(30, 9999))  # Define um validador para permitir apenas números inteiros maiores ou iguais a 30
+        self.intervalo_envio_edit.setPlaceholderText('10')  # Define um texto de espaço reservado para o campo de intervalo entre envios
+        self.intervalo_envio_edit.setValidator(QIntValidator(10, 15))  # Define um validador para permitir apenas números inteiros maiores ou iguais a 30
 
         self.assunto_label = QLabel('Assunto:')  # Cria um rótulo para o campo de assunto
         self.assunto_edit = QLineEdit()  # Cria um campo de entrada para o assunto
@@ -111,6 +111,7 @@ class EmailMainView(QWidget):
         self.redirecionar_whatsapp_label = QLabel('Número para redirecionar:')
         self.redirecionar_whatsapp_edit = QLineEdit()
         self.redirecionar_whatsapp_edit.setPlaceholderText('O número precisa ser exatamente igual o do whatsapp')
+        self.redirecionar_whatsapp_edit.textChanged.connect(self.validateRedirectNumber)
         
         self.log_area = QTextEdit()
         self.log_area.setReadOnly(True)
@@ -210,8 +211,8 @@ class EmailMainView(QWidget):
         mensagem_html = mensagem_html.replace('\n', '<br>')
 
         # Verifica se o intervalo de envio é menor que 30 segundos
-        if int(self.intervalo_envio_edit.text()) < 30:
-            QMessageBox.warning(self, 'Valor Inválido', 'O intervalo entre envios deve ser no mínimo 30 segundos.')
+        if int(self.intervalo_envio_edit.text()) < 10:
+            QMessageBox.warning(self, 'Valor Inválido', 'O intervalo entre envios deve ser no mínimo 10 segundos.')
             self.set_widgets_enabled(True)
             return
         
@@ -242,7 +243,6 @@ class EmailMainView(QWidget):
     def closeEvent(self, event) -> None:
         if self.log_thread is not None:
             self.log_thread.stop()
-            self.log_thread.wait()
         event.accept()
     
     
@@ -310,6 +310,17 @@ class EmailMainView(QWidget):
         
         for _, item in enumerate(lista_desabilitar_ou_habilitar):
             item.setEnabled(enabled)
+            
+    
+    def validateRedirectNumber(self) -> None:
+        text: str = self.redirecionar_whatsapp_edit.text()
+
+        text = ''.join(filter(str.isdigit, text))
+
+        if len(text) > 13:
+            text = text[:13]
+
+        self.redirecionar_whatsapp_edit.setText(text)
             
         
     def choose_planilha(self) -> None:

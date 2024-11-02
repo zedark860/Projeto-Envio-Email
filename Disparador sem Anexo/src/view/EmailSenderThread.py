@@ -16,7 +16,7 @@ class EmailSenderThread(QThread):
         try:
             while self.running:
                 self.requisicao_iniciar_envios()
-                time.sleep(self.data["send_interval"])   
+                time.sleep(self.data["send_interval"])    
                 self.finished_signal.emit()
             return
         except Exception as e:
@@ -35,7 +35,7 @@ class EmailSenderThread(QThread):
             validator: bool = dataUserController.check_data_user()
             
             if validator:
-                self.log_signal.emit('Envio de e-mails iniciado com sucesso!\n')
+                self.log_signal.emit("Iniciando envio de e-mails...\n")
                 
                 SenderEmailController(
                     data_user = dataUserController, 
@@ -52,6 +52,7 @@ class EmailSenderThread(QThread):
             self.stop()
         except Exception as e:
             self.log_signal.emit(f'Erro ao iniciar o envio de e-mails: {str(e)}')
+            self.stop()
             
             
     def stop(self):

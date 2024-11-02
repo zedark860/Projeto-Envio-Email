@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
     QDesktopWidget, 
     QHBoxLayout,
     )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIntValidator
 
 def resource_path(relative_path):
@@ -40,7 +40,6 @@ class EmailMainView(QWidget):
         self.init_ui(styleMain)
         self.email = email
         self.app_password = app_password
-        self.email_thread = None
         self.log_thread = None
         
 
@@ -111,6 +110,7 @@ class EmailMainView(QWidget):
         self.redirecionar_whatsapp_label = QLabel('Número para redirecionar:')
         self.redirecionar_whatsapp_edit = QLineEdit()
         self.redirecionar_whatsapp_edit.setPlaceholderText('O número precisa ser exatamente igual o do whatsapp')
+        self.redirecionar_whatsapp_edit.textChanged.connect(self.validateRedirectNumber)
         
         self.log_area = QTextEdit()
         self.log_area.setReadOnly(True)
@@ -118,7 +118,7 @@ class EmailMainView(QWidget):
         self.iniciar_button = QPushButton('Iniciar Envio')  # Cria um botão para iniciar o envio
         self.iniciar_button.setStyleSheet(f'background-color: {cor_azul_escuro}')  # Define o estilo do botão de início
         self.iniciar_button.clicked.connect(self.iniciar_envio)
-
+        
         
         layout_escolher_planilha = QHBoxLayout() # Adiciona o botão de escolha da planilha ao layout
         layout_escolher_planilha.addWidget(self.planilha_path_label) # Adiciona o rótulo de caminho da planilha ao layout
@@ -224,6 +224,11 @@ class EmailMainView(QWidget):
         self.log_thread.finished.connect(self.finalizar_envio)
         self.log_thread.start()
         self.set_widgets_enabled(False)
+        
+    
+    def finalizar_envio(self):
+        self.set_widgets_enabled(True)
+        QMessageBox.information(self, 'Sucesso', 'Envio de e-mails encerrado!')
 
 
     def atualizar_logs(self, log_message) -> None:
@@ -232,17 +237,11 @@ class EmailMainView(QWidget):
     
     def limpar_logs(self) -> None:
         self.log_area.clear()
-        
-        
-    def finalizar_envio(self):
-        self.set_widgets_enabled(True)
-        QMessageBox.information(self, 'Sucesso', 'Envio de e-mails encerrado!')
 
 
     def closeEvent(self, event) -> None:
         if self.log_thread is not None:
             self.log_thread.stop()
-            self.log_thread.wait()
         event.accept()
     
     
@@ -307,10 +306,22 @@ class EmailMainView(QWidget):
             self.limpar_logs_button,
             self.redirecionar_whatsapp_edit,
         ]
+
         
         for _, item in enumerate(lista_desabilitar_ou_habilitar):
             item.setEnabled(enabled)
             
+     
+    def validateRedirectNumber(self) -> None:
+        text: str = self.redirecionar_whatsapp_edit.text()
+
+        text = ''.join(filter(str.isdigit, text))
+
+        if len(text) > 13:
+            text = text[:13]
+
+        self.redirecionar_whatsapp_edit.setText(text)
+        
         
     def choose_planilha(self) -> None:
         # Abre um diálogo para escolher a planilha
