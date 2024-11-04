@@ -126,14 +126,14 @@ class SenderEmailController(SenderEmailModel):
         port_smtp = 587
         
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = self.clean_text(self.email_subject)
-        msg['From'] = self.clean_text(self.data_user.email)
-        msg['To'] = self.clean_text(destination_email)
-        msg.attach(MIMEText(self.clean_text(copy_body_html), 'html', 'utf-8'))
+        msg['Subject'] = self.email_subject
+        msg['From'] = self.data_user.email
+        msg['To'] = destination_email
+        msg.attach(MIMEText(copy_body_html, 'html', 'utf-8'))
         
         with smtplib.SMTP(server_smtp, port_smtp) as server:
             server.starttls()
-            server.login(msg['From'], self.data_user.app_password)
+            server.login(msg['From'], self.clean_text(self.data_user.app_password))
             server.sendmail(msg['From'], [msg['To']], msg.as_string().encode('utf-8'))
             
 
