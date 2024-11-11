@@ -206,7 +206,7 @@ class SenderEmailController(SenderEmailModel):
             self.html_path)
         destination_emails, df_emails = self.read_emails()
         
-        last_sent_index: int = df_emails[df_emails[self.list_columns[4]].isin(['ENVIADO', 'ERRO'])].index.max()
+        last_sent_index: int = df_emails[df_emails[self.list_columns[5]].isin(['ENVIADO', 'ERRO'])].index.max()
         start_index: int = (last_sent_index + 1) if pd.notna(last_sent_index) else 0
 
         for i, destination_email in enumerate(destination_emails[start_index:]):
