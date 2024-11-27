@@ -93,12 +93,12 @@ class EmailMainView(QWidget):
         self.titulo_html_edit = QLineEdit()  # Cria um campo de entrada para o título
         self.titulo_html_edit.setPlaceholderText('Título do E-mail')  # Define um texto de espaço reservado para o campo de título
         
-        # self.inserir_nome_button = QPushButton('Inserir Nome')
-        # self.inserir_nome_button.clicked.connect(self.inserir_nome_variavel)
-        # self.inserir_tipo_produto_button = QPushButton('Inserir Produto')
-        # self.inserir_tipo_produto_button.clicked.connect(self.inserir_produto_variavel)
-        # self.inserir_protocolo_button = QPushButton('Inserir Protocolo')
-        # self.inserir_protocolo_button.clicked.connect(self.inserir_protocolo_variavel)
+        self.inserir_nome_button = QPushButton('Inserir Nome')
+        self.inserir_nome_button.clicked.connect(self.inserir_nome_variavel)
+        self.inserir_tipo_produto_button = QPushButton('Inserir Produto')
+        self.inserir_tipo_produto_button.clicked.connect(self.inserir_produto_variavel)
+        self.inserir_protocolo_button = QPushButton('Inserir Protocolo')
+        self.inserir_protocolo_button.clicked.connect(self.inserir_protocolo_variavel)
         
         self.limpar_logs_button = QPushButton('Limpar Logs')
         self.limpar_logs_button.clicked.connect(self.limpar_logs)
@@ -146,10 +146,10 @@ class EmailMainView(QWidget):
         layout_assunto_titulo.addWidget(self.titulo_html_edit)  # Adiciona o campo de título ao layout
         
         # Layout para os campos de botões inserir nome e produto
-        # layout_nome_e_prod_prot = QHBoxLayout()
-        # layout_nome_e_prod_prot.addWidget(self.inserir_nome_button)
-        # layout_nome_e_prod_prot.addWidget(self.inserir_tipo_produto_button)
-        # layout_nome_e_prod_prot.addWidget(self.inserir_protocolo_button)
+        layout_nome_e_prod_prot = QHBoxLayout()
+        layout_nome_e_prod_prot.addWidget(self.inserir_nome_button)
+        layout_nome_e_prod_prot.addWidget(self.inserir_tipo_produto_button)
+        layout_nome_e_prod_prot.addWidget(self.inserir_protocolo_button)
         
         layout_limpar_logs_iniciar_button = QHBoxLayout()
         layout_limpar_logs_iniciar_button.addWidget(self.limpar_logs_button)
@@ -173,7 +173,7 @@ class EmailMainView(QWidget):
         layout.addWidget(self.log_area)
         
         # Adicione os botões de inserir nome e produto ao layout principal
-        # layout.addLayout(layout_nome_e_prod_prot)
+        layout.addLayout(layout_nome_e_prod_prot)
         layout.addLayout(layout_limpar_logs_iniciar_button)
 
         # Adicione o layout principal à janela
@@ -300,9 +300,9 @@ class EmailMainView(QWidget):
             self.iniciar_button,
             self.mensagem_html_edit,
             self.intervalo_envio_edit,
-            # self.inserir_nome_button,
-            # self.inserir_tipo_produto_button,
-            # self.inserir_protocolo_button,
+            self.inserir_nome_button,
+            self.inserir_tipo_produto_button,
+            self.inserir_protocolo_button,
             self.limpar_logs_button,
             self.redirecionar_whatsapp_edit,
         ]
@@ -325,7 +325,7 @@ class EmailMainView(QWidget):
         
     def choose_planilha(self) -> None:
         # Abre um diálogo para escolher a planilha
-        planilha_path, _ = QFileDialog.getOpenFileName(self, 'Escolher Planilha', '', 'Excel Files (*.xlsx *.xls *.csv *.xlsm)')
+        planilha_path, _ = QFileDialog.getOpenFileName(self, 'Escolher Planilha', '', 'Excel Files (*.xlsx *.xls)')
         if planilha_path:
             self.planilha_path_edit.setText(planilha_path)
             
@@ -344,19 +344,19 @@ class EmailMainView(QWidget):
         )
     
        
-    # def inserir_nome_variavel(self) -> None:
-    #     # Insere uma variável para o nome na mensagem de e-mail
-    #     self.mensagem_html_edit.insertPlainText('{nome}')
-    #     self.titulo_html_edit.setText('{nome}')
+    def inserir_nome_variavel(self) -> None:
+        # Insere uma variável para o nome na mensagem de e-mail
+        self.mensagem_html_edit.insertPlainText('{nome}')
+        self.titulo_html_edit.setText('{nome}')
 
 
-    # def inserir_produto_variavel(self) -> None:
-    #     # Insere uma variável para o produto na mensagem de e-mail
-    #     self.mensagem_html_edit.insertPlainText('{produto}')
-    #     self.titulo_html_edit.setText('{produto}')
+    def inserir_produto_variavel(self) -> None:
+        # Insere uma variável para o produto na mensagem de e-mail
+        self.mensagem_html_edit.insertPlainText('{produto}')
+        self.titulo_html_edit.setText('{produto}')
         
 
-    # def inserir_protocolo_variavel(self) -> None:
-    #     # Insere uma variável para o protocolo na mensagem de e-mail
-    #     self.mensagem_html_edit.insertPlainText('{protocolo}')
-    #     self.titulo_html_edit.setText('{protocolo}')
+    def inserir_protocolo_variavel(self) -> None:
+        # Insere uma variável para o protocolo na mensagem de e-mail
+        self.mensagem_html_edit.insertPlainText('{protocolo}')
+        self.titulo_html_edit.setText('{protocolo}')

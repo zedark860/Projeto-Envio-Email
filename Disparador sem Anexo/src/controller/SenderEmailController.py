@@ -1,27 +1,17 @@
 import random
 import time
 import smtplib
-import os
-import sys
 import pandas as pd
 from PyQt5.QtCore import pyqtBoundSignal
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from smtplib import SMTPException, SMTPAuthenticationError, SMTPConnectError, SMTPServerDisconnected, SMTPRecipientsRefused
 from src.controller.DataUserController import DataUserController
 from src.model.SenderEmailModel import SenderEmailModel
 from src.log.Log import Log
 
 class SenderEmailController(SenderEmailModel):
-    
-    # Não está sendo utilizado
-    @staticmethod
-    def resource_path(relative_path):
-        base_path = getattr(sys, '_MEIPASS', os.path.dirname(
-            os.path.abspath(__file__)))
-    
-        return os.path.join(base_path, relative_path)
-    
     
     @staticmethod
     def clean_text(text: str) -> str:
@@ -39,6 +29,15 @@ class SenderEmailController(SenderEmailModel):
         return random.randint(send_interval - 5, send_interval + 5)
     
     
+    @staticmethod
+    def is_file_locked(file_path: str) -> bool:
+        try:
+            with open(file_path, 'r+'):
+                return False
+        except OSError:
+            return True
+    
+    
     def __init__(self, data_user: DataUserController, spreadsheet_path: str, html_path: str, email_send_quantity: int, send_interval: int, email_subject: str, email_title: str, email_message: str, whatsapp_redirect_number: str):
         super().__init__(
             data_user=data_user,
@@ -50,70 +49,75 @@ class SenderEmailController(SenderEmailModel):
             email_title=email_title, 
             email_message=email_message, 
             whatsapp_redirect_number=whatsapp_redirect_number,
-            list_columns=['E-mail', 'Nome', 'Protocolo', 'Produto', 'STATUS']
+            list_columns=None
         )
 
     
-    def read_emails(self) -> tuple[list[str], pd.DataFrame]:
-        df_emails = pd.read_excel(self.spreadsheet_path)
+    def read_emails(self) -> tuple[list[str], pd.DataFrame, list[str]]:
+        if SenderEmailController.is_file_locked(self.spreadsheet_path):
+            raise Exception("O arquivo de planilha está sendo utilizado por outro processo, feche-a e tente novamente.")
         
-        required_columns: list[str] = self.list_columns
+        df_emails = pd.read_excel(self.spreadsheet_path, converters={"Status": str})
+        
+        self.list_columns = df_emails.columns.tolist()
+        variables_columns: list[str] = list(filter(lambda x: x not in ['E-mail', 'Status'], self.list_columns))
         
         try:
-            df_emails.columns = required_columns
+            if "E-mail" not in self.list_columns or "Status" not in self.list_columns:
+                raise KeyError("Coluna 'E-mail' ou 'Status' não encontrada na planilha.")
             
             df_no_duplicates: pd.DataFrame = df_emails.drop_duplicates(
                 subset=self.list_columns, keep='first')
 
             df_no_duplicates.to_excel(self.spreadsheet_path, index=False)
-
-            return df_no_duplicates[self.list_columns[0]].tolist(), df_no_duplicates
-        except KeyError as error:
-            missing_columns: list[str] = list(set(required_columns) - set(df_emails.columns))
-            raise KeyError(f"Colunas ausentes na planilha: {', '.join(missing_columns)}") from error
-    
-    
-    def get_name_product(self, df_emails: pd.DataFrame, destination_email: str) -> tuple[str, str, str]:
-        if destination_email in df_emails[self.list_columns[0]].values:
-            name: str = df_emails.loc[df_emails[self.list_columns[0]] == destination_email, self.list_columns[1]].iloc[0]
-            product: str = df_emails.loc[df_emails[self.list_columns[0]] == destination_email, self.list_columns[2]].iloc[0]
-            protocol: str = df_emails.loc[df_emails[self.list_columns[0]] == destination_email, self.list_columns[3]].iloc[0]
             
-            return name, product, protocol
+            colum_emails: list[str] = df_no_duplicates["E-mail"].tolist()
 
-        name, product, protocol = '', '', ''
-        return name, product, protocol
+            return colum_emails, df_no_duplicates, variables_columns
+        except Exception as error:
+            raise Exception(f"Erro ao carregar emails: {error}")
     
-
-    def update_message(self, name: str, product: str, protocol: str) -> tuple[str, str, str]:
-        aux_dict: dict[str, str] = {
-            "{nome}": str(name),
-            "{produto}": str(product),
-            "{protocolo}": str(protocol),
+    
+    def verify_last_index_and_start_index(self, df_emails: pd.DataFrame) -> int:
+        last_sent_index: int = df_emails[df_emails["Status"].isin(['ENVIADO', 'ERRO'])].index.max()
+        return(last_sent_index + 1) if pd.notna(last_sent_index) else 0
+    
+    
+    def get_name_product(self, df_emails: pd.DataFrame, destination_email: str, variables_columns: list[str]) -> dict[str, str]:
+        def has_value(value: str) -> str:
+            return '' if value == 'nan' or value is None else value
+        
+        dynamic_values: dict[str, str] = {
+            column: has_value(df_emails[df_emails["E-mail"] == destination_email][column].astype(str).values[0])
+            for column in variables_columns
         }
         
+        return dynamic_values
+    
+
+    def update_message(self, columns_values: dict[str, str]) -> tuple[str, str, str]:
         message_copy: str = self.email_message
         title_copy: str = self.email_title
         
-        if name is not None or product is not None or protocol is not None:
-            for key, value in aux_dict.items():
-                message_copy = message_copy.replace(key, value)
-                title_copy = title_copy.replace(key, value)
+        for key, value in columns_values.items():
+            print(key, value)
+            message_copy = message_copy.replace(f"{{{key.lower()}}}", value)
+            title_copy = title_copy.replace(f"{{{key.lower()}}}", value)
                 
-            link_whatsapp_copy: str = f"https://api.whatsapp.com/send?phone={self.whatsapp_redirect_number}&text=Ol%C3%A1!%20Vim%20pelo%20email%20e%20gostaria%20de%20tirar%20algumas%20d%C3%BAvidas"
+        link_whatsapp_copy: str = f"https://api.whatsapp.com/send?phone={self.whatsapp_redirect_number}&text=Ol%C3%A1!%20Vim%20pelo%20email%20e%20gostaria%20de%20tirar%20algumas%20d%C3%BAvidas"
 
-            return message_copy, title_copy, link_whatsapp_copy
+        return message_copy, title_copy, link_whatsapp_copy
     
     
-    def type_verify_email(self) -> str:
+    def type_verify_email(self) -> tuple[str, int]:
         email_and_server: dict[str, str] = {
-            "gmail.com": "smtp.gmail.com",
-            "webcertificados.com.br": "smtp.gmail.com",
-            "webcertificado.com.br": "smtp.gmail.com",
-            "outlook.com": "smtp.office365.com",
-            "hotmail.com": "smtp.live.com",
-            "aol.com": "smtp.aol.com",
-            "icloud.com": "smtp.mail.me.com",
+            "gmail.com": ("smtp.gmail.com", 587),
+            "webcertificados.com.br": ("smtp.gmail.com", 587),
+            "webcertificado.com.br": ("smtp.gmail.com", 587),
+            "outlook.com": ("smtp.office365.com", 587),
+            "hotmail.com": ("smtp.live.com", 587),
+            "aol.com": ("smtp.aol.com", 587),
+            "icloud.com": ("smtp.mail.me.com", 587),
         }
         
         domain: str = self.data_user.email.split('@')[-1]
@@ -122,18 +126,17 @@ class SenderEmailController(SenderEmailModel):
     
     
     def config_send_email(self, destination_email: str, copy_body_html: str) -> None:
-        server_smtp = self.type_verify_email()
-        port_smtp = 587
+        server_smtp, port_smtp = self.type_verify_email()
         
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = self.clean_text(self.email_subject)
-        msg['From'] = self.clean_text(self.data_user.email)
-        msg['To'] = self.clean_text(destination_email)
-        msg.attach(MIMEText(self.clean_text(copy_body_html), 'html', 'utf-8'))
+        msg['Subject'] = self.email_subject
+        msg['From'] = self.data_user.email
+        msg['To'] = destination_email
+        msg.attach(MIMEText(copy_body_html, 'html', 'utf-8'))
         
         with smtplib.SMTP(server_smtp, port_smtp) as server:
             server.starttls()
-            server.login(msg['From'], self.data_user.app_password)
+            server.login(msg['From'], self.clean_text(self.data_user.app_password))
             server.sendmail(msg['From'], [msg['To']], msg.as_string().encode('utf-8'))
             
 
@@ -157,32 +160,52 @@ class SenderEmailController(SenderEmailModel):
         return message
     
     
+    def pre_process_emails(self, df_emails: pd.DataFrame, destination_email: str, body_html_original: str, variables_columns: list[str]) -> list[str]:
+        columns_values: dict[str, str] = self.get_name_product(df_emails, destination_email, variables_columns)
+        message_copy, title_copy, link_whatsapp_copy = self.update_message(columns_values)
+        copy_body_html: str = self.replace_email_html(body_html_original, message_copy, title_copy, link_whatsapp_copy)
+        self.config_send_email(destination_email, copy_body_html)
+        
+    
+    def sucess_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], i: int, start_index: int, random_interval: int, log_signal: pyqtBoundSignal) -> None:
+        df_emails.loc[i, "Status"] = 'ENVIADO'
+        df_emails.to_excel(self.spreadsheet_path, index=False)
+        message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, start_index, None, random_interval)
+        log_signal.emit(message_success)
+        time.sleep(random_interval)
+    
+    
+    def error_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], i: int, start_index: int, error: Exception, log_signal: pyqtBoundSignal) -> None:
+        df_emails.loc[i, "Status"] = 'ERRO'
+        df_emails.to_excel(self.spreadsheet_path, index=False)
+        message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, None, error, None)
+        log_signal.emit(message_error)
+        
+    
     def send_emails(self, log_signal: pyqtBoundSignal) -> None:
         body_html_original: str = SenderEmailController.load_html(self.html_path)
-        destination_emails, df_emails = self.read_emails()
+        destination_emails, df_emails, variables_columns = self.read_emails()
         
-        last_sent_index: int = df_emails[df_emails[self.list_columns[4]].isin(['ENVIADO', 'ERRO'])].index.max()
-        start_index: int = (last_sent_index + 1) if pd.notna(last_sent_index) else 0
+        start_index: int = self.verify_last_index_and_start_index(df_emails)
         
         for i, destination_email in enumerate(destination_emails[start_index:]):
+            random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
             if (i + 1) > self.email_send_quantity:
                 break
             
             try:
-                name, product, protocol = self.get_name_product(df_emails, destination_email)
-                message_copy, title_copy, link_whatsapp_copy = self.update_message(name, product, protocol)
-                copy_body_html: str = self.replace_email_html(body_html_original, message_copy, title_copy, link_whatsapp_copy)
-                self.config_send_email(destination_email, copy_body_html)
-                random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
-            
-                df_emails.loc[i, self.list_columns[4]] = 'ENVIADO'
-                df_emails.to_excel(self.spreadsheet_path, index=False)
-                message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, start_index, None, random_interval)
-                log_signal.emit(message_success)
-                time.sleep(random_interval)
+                self.pre_process_emails(df_emails, destination_email, body_html_original, variables_columns)
+                self.sucess_env(df_emails, destination_email, destination_emails, i, start_index, random_interval, log_signal)
+            except SMTPAuthenticationError:
+                message_error: str = "Erro de autenticação. Verifique o e-mail e senha do aplicativo., ou contate o suporte."
+                self.error_env(df_emails, destination_email, destination_emails, i, start_index, message_error, log_signal)
+            except SMTPRecipientsRefused:
+                message_error: str = f"O e-mail {destination_email} foi recusado pelo servidor SMTP. Tente iniciar os envios novamente ou feche o programa."
+                self.error_env(df_emails, destination_email, destination_emails, i, start_index, message_error, log_signal)
+                continue
+            except (SMTPConnectError, SMTPServerDisconnected):
+                message_error: str = "Conexão ou Falha com o servidor SMTP. Tente iniciar os envios novamente ou feche o programa."
+                self.error_env(df_emails, destination_email, destination_emails, i, start_index, message_error, log_signal)
             except Exception as error:
-                df_emails.loc[i, self.list_columns[4]] = 'ERRO'
-                df_emails.to_excel(self.spreadsheet_path, index=False)
-                message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, None, error, None)
-                log_signal.emit(message_error)
+                self.error_env(df_emails, destination_email, destination_emails, i, start_index, error, log_signal)
                 continue
