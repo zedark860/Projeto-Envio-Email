@@ -166,10 +166,10 @@ class SenderEmailController(SenderEmailModel):
         port_smtp: int = 587
 
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = self.clean_text(self.email_subject)
-        msg['From'] = self.clean_text(self.data_user.email)
-        msg['To'] = self.clean_text(destination_email)
-        msg.attach(MIMEText(self.clean_text(copy_body_html), 'html', 'utf-8'))
+        msg['Subject'] = self.email_subject
+        msg['From'] = self.data_user.email
+        msg['To'] = destination_email
+        msg.attach(MIMEText(copy_body_html, 'html', 'utf-8'))
 
         if attachments:
             for attachment in attachments:
@@ -177,7 +177,7 @@ class SenderEmailController(SenderEmailModel):
 
         with smtplib.SMTP(server_smtp, port_smtp) as server:
             server.starttls()
-            server.login(msg['From'], self.data_user.app_password)
+            server.login(msg['From'], self.clean_text(self.data_user.app_password))
             server.sendmail(msg['From'], [msg['To']], msg.as_string())
 
     def replace_email_html(self, body_html_original: str, message_copy: str, title_copy: str, link_whatsapp_copy: str) -> str:
@@ -206,7 +206,7 @@ class SenderEmailController(SenderEmailModel):
             self.html_path)
         destination_emails, df_emails = self.read_emails()
         
-        last_sent_index: int = df_emails[df_emails[self.list_columns[4]].isin(['ENVIADO', 'ERRO'])].index.max()
+        last_sent_index: int = df_emails[df_emails[self.list_columns[5]].isin(['ENVIADO', 'ERRO'])].index.max()
         start_index: int = (last_sent_index + 1) if pd.notna(last_sent_index) else 0
 
         for i, destination_email in enumerate(destination_emails[start_index:]):

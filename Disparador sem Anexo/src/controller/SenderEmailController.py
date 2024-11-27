@@ -209,3 +209,4 @@ class SenderEmailController(SenderEmailModel):
             except Exception as error:
                 self.error_env(df_emails, destination_email, destination_emails, i, start_index, error, log_signal)
                 continue
+
