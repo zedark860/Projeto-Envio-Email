@@ -63,7 +63,7 @@ class SenderEmailController(SenderEmailModel):
         variables_columns: list[str] = list(filter(lambda x: x not in ['E-mail', 'Status'], self.list_columns))
         
         try:
-            if "E-mail" not in self.list_columns or "Status" not in self.list_columns:
+            if not {"E-mail", "STATUS"}.issubset(self.list_columns)::
                 raise KeyError("Coluna 'E-mail' ou 'Status' não encontrada na planilha.")
             
             df_no_duplicates: pd.DataFrame = df_emails.drop_duplicates(
