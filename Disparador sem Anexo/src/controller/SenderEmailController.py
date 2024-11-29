@@ -57,10 +57,10 @@ class SenderEmailController(SenderEmailModel):
         if SenderEmailController.is_file_locked(self.spreadsheet_path):
             raise Exception("O arquivo de planilha está sendo utilizado por outro processo, feche-a e tente novamente.")
         
-        df_emails = pd.read_excel(self.spreadsheet_path, converters={"Status": str})
+        df_emails = pd.read_excel(self.spreadsheet_path, converters={"STATUS": str})
         
         self.list_columns = df_emails.columns.tolist()
-        variables_columns: list[str] = list(filter(lambda x: x not in ['E-mail', 'Status'], self.list_columns))
+        variables_columns: list[str] = list(filter(lambda x: x not in ['E-mail', 'STATUS'], self.list_columns))
         
         try:
             if not {"E-mail", "STATUS"}.issubset(self.list_columns)::
@@ -79,7 +79,7 @@ class SenderEmailController(SenderEmailModel):
     
     
     def verify_last_index_and_start_index(self, df_emails: pd.DataFrame) -> int:
-        last_sent_index: int = df_emails[df_emails["Status"].isin(['ENVIADO', 'ERRO'])].index.max()
+        last_sent_index: int = df_emails[df_emails["STATUS"].isin(['ENVIADO', 'ERRO'])].index.max()
         return(last_sent_index + 1) if pd.notna(last_sent_index) else 0
     
     
@@ -168,7 +168,7 @@ class SenderEmailController(SenderEmailModel):
         
     
     def sucess_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], i: int, start_index: int, random_interval: int, log_signal: pyqtBoundSignal) -> None:
-        df_emails.loc[i, "Status"] = 'ENVIADO'
+        df_emails.loc[i, "STATUS"] = 'ENVIADO'
         df_emails.to_excel(self.spreadsheet_path, index=False)
         message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, start_index, None, random_interval)
         log_signal.emit(message_success)
@@ -176,7 +176,7 @@ class SenderEmailController(SenderEmailModel):
     
     
     def error_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], i: int, start_index: int, error: Exception, log_signal: pyqtBoundSignal) -> None:
-        df_emails.loc[i, "Status"] = 'ERRO'
+        df_emails.loc[i, "STATUS"] = 'ERRO'
         df_emails.to_excel(self.spreadsheet_path, index=False)
         message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, None, error, None)
         log_signal.emit(message_error)
