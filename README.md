@@ -48,9 +48,11 @@ Além disso, é aconselhável que para emails recém criados sejam enviados aos 
 ## Fotos do Projeto
 
 - Tela de Login
+
 ![Tela de Login](https://github.com/DaviRodrigues/Projeto-Envio-Email/blob/main/img/Tela_Login_Email.png)
 
 - Tela Principal
+
 ![Tela Principal](https://github.com/DaviRodrigues/Projeto-Envio-Email/blob/main/img/Tela_Principal_Email.png)
 
 ## Como Usar
