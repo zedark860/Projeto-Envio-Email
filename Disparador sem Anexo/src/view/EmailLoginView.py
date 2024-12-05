@@ -194,4 +194,4 @@ class EmailLoginView(QWidget):
             self.open_main_view(email, app_password)
             self.close()
         except Exception as e:
-            QMessageBox.critical(self, 'Erro', f'Erro ao verificar credenciais:: {str(e)}')
+            QMessageBox.critical(self, 'Erro', f'Erro ao verificar credenciais: {str(e)}')

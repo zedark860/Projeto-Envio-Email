@@ -18,10 +18,7 @@ class DataUserController(DataUserModel):
     def check_data_user(self) -> bool:
         data_user_json = self.__load_data_from_json()
         
-        if data_user_json["email"] != self.email or data_user_json["app_password"] != self.app_password:
-            return False
-            
-        return True
+        return data_user_json["email"] == self.email and data_user_json["app_password"] == self.app_password
     
     
     def save_data_in_json(self) -> None:
@@ -64,8 +61,11 @@ class DataUserController(DataUserModel):
             
     
     def __load_data_from_json(self) -> dict[str, str]:
-        with open(DataUserController.resource_path(self.archive_name), 'r') as file:
-            data_user_json = json.load(file)
+        try:
+            with open(DataUserController.resource_path(self.archive_name), 'r') as file:
+                data_user_json = json.load(file)
+        except FileNotFoundError:
+            raise FileNotFoundError("Usuário não encontrado! Tente criar um.")
 
         return data_user_json
             

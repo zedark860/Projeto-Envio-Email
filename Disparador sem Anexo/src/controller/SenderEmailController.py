@@ -63,8 +63,8 @@ class SenderEmailController(SenderEmailModel):
         variables_columns: list[str] = list(filter(lambda x: x not in ['E-mail', 'STATUS'], self.list_columns))
         
         try:
-            if not {"E-mail", "STATUS"}.issubset(self.list_columns)::
-                raise KeyError("Coluna 'E-mail' ou 'Status' não encontrada na planilha.")
+            if not {"E-mail", "STATUS"}.issubset(self.list_columns):
+                raise KeyError("Coluna 'E-mail' ou 'STATUS' não encontrada na planilha. (Colunas obrigatórias)")
             
             df_no_duplicates: pd.DataFrame = df_emails.drop_duplicates(
                 subset=self.list_columns, keep='first')
@@ -83,12 +83,12 @@ class SenderEmailController(SenderEmailModel):
         return(last_sent_index + 1) if pd.notna(last_sent_index) else 0
     
     
-    def get_name_product(self, df_emails: pd.DataFrame, destination_email: str, variables_columns: list[str]) -> dict[str, str]:
+    def get_values_of_spreadsheet(self, df_emails: pd.DataFrame, variables_columns: list[str], index: int) -> dict[str, str]:
         def has_value(value: str) -> str:
             return '' if value == 'nan' or value is None else value
         
         dynamic_values: dict[str, str] = {
-            column: has_value(df_emails[df_emails["E-mail"] == destination_email][column].astype(str).values[0])
+            column: has_value(str(df_emails.loc[index, column]))
             for column in variables_columns
         }
         
@@ -100,7 +100,6 @@ class SenderEmailController(SenderEmailModel):
         title_copy: str = self.email_title
         
         for key, value in columns_values.items():
-            print(key, value)
             message_copy = message_copy.replace(f"{{{key.lower()}}}", value)
             title_copy = title_copy.replace(f"{{{key.lower()}}}", value)
                 
@@ -149,36 +148,36 @@ class SenderEmailController(SenderEmailModel):
         return copy_body_html
     
     
-    def write_on_console_and_txt(self, destination_email: str, destination_emails: list[str], validator: bool, i: int, start_index: int=None, error=None, interval_send_email=None) -> str:
+    def write_on_console_and_txt(self, destination_email: str, destination_emails: list[str], validator: bool, index: int, start_index: int=None, error: str=None, interval_send_email: int=None) -> str:
         if not validator:
             message: str = f"Erro ao enviar email para {destination_email} às {datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}. Erro: {error}\n"
             Log.write_error(self.data_user.email, message)
             return message
         
-        message: str = f"Email enviado para {destination_email} às {datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}\nTotal de emails enviados: {i + 1} de {len(destination_emails[start_index:])} " + f"Intervalo de envio: {interval_send_email} segundos\n"
+        message: str = f"Email enviado para {destination_email} às {datetime.now().strftime('%d/%m/%Y-%H:%M:%S')}\nTotal de emails enviados: {index + 1} de {len(destination_emails[start_index:])} " + f"Intervalo de envio: {interval_send_email} segundos\n"
         Log.write_success(self.data_user.email, message)
         return message
     
     
-    def pre_process_emails(self, df_emails: pd.DataFrame, destination_email: str, body_html_original: str, variables_columns: list[str]) -> list[str]:
-        columns_values: dict[str, str] = self.get_name_product(df_emails, destination_email, variables_columns)
+    def pre_process_emails(self, df_emails: pd.DataFrame, destination_email: str, body_html_original: str, variables_columns: list[str], index: int) -> list[str]:
+        columns_values: dict[str, str] = self.get_values_of_spreadsheet(df_emails, variables_columns, index)
         message_copy, title_copy, link_whatsapp_copy = self.update_message(columns_values)
         copy_body_html: str = self.replace_email_html(body_html_original, message_copy, title_copy, link_whatsapp_copy)
         self.config_send_email(destination_email, copy_body_html)
         
     
-    def sucess_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], i: int, start_index: int, random_interval: int, log_signal: pyqtBoundSignal) -> None:
-        df_emails.loc[i, "STATUS"] = 'ENVIADO'
+    def sucess_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], index: int, start_index: int, random_interval: int, log_signal: pyqtBoundSignal) -> None:
+        df_emails.loc[index, "STATUS"] = 'ENVIADO'
         df_emails.to_excel(self.spreadsheet_path, index=False)
-        message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, i, start_index, None, random_interval)
+        message_success: str = self.write_on_console_and_txt(destination_email, destination_emails, True, index, start_index, None, random_interval)
         log_signal.emit(message_success)
         time.sleep(random_interval)
     
     
-    def error_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], i: int, start_index: int, error: Exception, log_signal: pyqtBoundSignal) -> None:
-        df_emails.loc[i, "STATUS"] = 'ERRO'
+    def error_env(self, df_emails: pd.DataFrame, destination_email: str, destination_emails: list[str], index: int, error: Exception, log_signal: pyqtBoundSignal) -> None:
+        df_emails.loc[index, "STATUS"] = 'ERRO'
         df_emails.to_excel(self.spreadsheet_path, index=False)
-        message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, i, None, error, None)
+        message_error: str = self.write_on_console_and_txt(destination_email, destination_emails, False, index, None, error, None)
         log_signal.emit(message_error)
         
     
@@ -188,25 +187,30 @@ class SenderEmailController(SenderEmailModel):
         
         start_index: int = self.verify_last_index_and_start_index(df_emails)
         
-        for i, destination_email in enumerate(destination_emails[start_index:]):
+        if not destination_emails or not destination_emails[start_index:]:
+            raise Exception("Nenhum e-mail encontrado na planilha para envio. Cheque a coluna de E-mail ou STATUS.")
+        
+        for index, destination_email in enumerate(destination_emails[start_index:]):
             random_interval: int = SenderEmailController.wait_random_send_email(self.send_interval)
-            if (i + 1) > self.email_send_quantity:
+            if (index + 1) > self.email_send_quantity:
                 break
             
             try:
-                self.pre_process_emails(df_emails, destination_email, body_html_original, variables_columns)
-                self.sucess_env(df_emails, destination_email, destination_emails, i, start_index, random_interval, log_signal)
+                self.pre_process_emails(df_emails, destination_email, body_html_original, variables_columns, index)
+                self.sucess_env(df_emails, destination_email, destination_emails, index, start_index, random_interval, log_signal)
             except SMTPAuthenticationError:
-                message_error: str = "Erro de autenticação. Verifique o e-mail e senha do aplicativo., ou contate o suporte."
-                self.error_env(df_emails, destination_email, destination_emails, i, start_index, message_error, log_signal)
+                message_error: str = "Erro de autenticação ou limite de envios excedido. Verifique o e-mail e senha do aplicativo., ou contate o suporte."
+                self.error_env(df_emails, destination_email, destination_emails, index, message_error, log_signal)
+                break
             except SMTPRecipientsRefused:
                 message_error: str = f"O e-mail {destination_email} foi recusado pelo servidor SMTP. Tente iniciar os envios novamente ou feche o programa."
-                self.error_env(df_emails, destination_email, destination_emails, i, start_index, message_error, log_signal)
+                self.error_env(df_emails, destination_email, destination_emails, index, message_error, log_signal)
                 continue
             except (SMTPConnectError, SMTPServerDisconnected):
                 message_error: str = "Conexão ou Falha com o servidor SMTP. Tente iniciar os envios novamente ou feche o programa."
-                self.error_env(df_emails, destination_email, destination_emails, i, start_index, message_error, log_signal)
+                self.error_env(df_emails, destination_email, destination_emails, index, message_error, log_signal)
+                break
             except Exception as error:
-                self.error_env(df_emails, destination_email, destination_emails, i, start_index, error, log_signal)
+                self.error_env(df_emails, destination_email, destination_emails, index, error, log_signal)
                 continue
 
