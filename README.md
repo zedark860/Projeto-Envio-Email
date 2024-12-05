@@ -45,6 +45,14 @@ Além disso, é aconselhável que para emails recém criados sejam enviados aos 
     source .venv/bin/activate  # No Windows, use `.venv\Scripts\activate`
     ```
 
+## Fotos do Projeto
+
+- Tela de Login
+![Tela de Login]()
+
+- Tela Principal
+![Tela Principal]()
+
 ## Como Usar
 
    - Execute o script principal do projeto com interface:
