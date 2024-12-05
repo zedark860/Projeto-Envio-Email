@@ -1,6 +1,6 @@
 # Projeto Envio Email
 
-Bem-vindo ao Projeto Envio Email! Este é um projeto de automação desenvolvido em Python para facilitar o envio de emails.
+Bem-vindo ao Projeto Envio Email! Este é um projeto de automação desenvolvido em Python para facilitar o envio de emails em massa.
 
 ## Índice
 
@@ -8,13 +8,15 @@ Bem-vindo ao Projeto Envio Email! Este é um projeto de automação desenvolvido
 - [Funcionalidades](#funcionalidades)
 - [Tecnologias Utilizadas](#tecnologias-utilizadas)
 - [Instalação](#instalação)
+- [Fotos do Projeto](#fotos-do-projeto)
 - [Como Usar](#como-usar)
 - [Exemplo de Uso](#exemplo-de-uso)
 - [Licença](#licença)
 
 ## Introdução
 
-Este projeto foi criado para automatizar o envio de emails para múltiplos destinatários com a possibilidade de personalização de mensagens. Utiliza Python e bibliotecas específicas para gerenciar o envio de emails de maneira eficiente e segura.
+Este projeto foi criado para automatizar o envio de emails para múltiplos destinatários com a possibilidade de personalização de mensagens, inclusão de anexo e escolha de temaplate html. Utiliza Python e bibliotecas específicas para gerenciar o envio de emails de maneira eficiente e segura.
+Além disso, é aconselhável que para emails recém criados sejam enviados aos poucos para evitar banimentos e também limite de envios execido. Outro fator a se ressaltar é de que alguns domínios de email podem não estarem disponíveis o ideal é utilizar um do Google ou [webcertificados.com.br, webcertificado.com.br, outlook.com, hotmail.com, aol.com, icloud.com].
 
 ## Funcionalidades
 
@@ -98,4 +100,3 @@ for destinatario in destinatarios:
 Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](link) para mais detalhes.
 
 Agredeço por sua visita!
-
