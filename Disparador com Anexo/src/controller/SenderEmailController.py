@@ -198,7 +198,7 @@ class SenderEmailController(SenderEmailModel):
         msg['Subject'] = self.email_subject
         msg['From'] = self.data_user.email
         msg['To'] = destination_email
-        msg.attach(MIMEText(self.clean_text(copy_body_html), 'html', 'utf-8'))
+        msg.attach(MIMEText(copy_body_html, 'html', 'utf-8'))
 
         if attachments:
             for attachment in attachments:
