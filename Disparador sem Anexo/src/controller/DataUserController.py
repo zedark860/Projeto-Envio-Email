@@ -24,15 +24,12 @@ class DataUserController(DataUserModel):
     def save_data_in_json(self) -> None:
         # Não é a melhor forma de se fazer no momento, pois isso pode acarretar em falha de segurança
         # No caso se alguém ver que o email existe, pode colocar outra senha para esse email e bloquear o acesso de outro usuário
+        paste_name: str = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__))) + "\\data"
+        if not os.path.exists(paste_name):
+            os.mkdir(paste_name)
+        
         if os.path.exists(DataUserController.resource_path(self.archive_name)):
             raise Exception("Email já existente, escolha outro!")
-        
-        if not os.path.exists(DataUserController.resource_path(self.archive_name)):
-            with open(DataUserController.resource_path(self.archive_name), "x") as file:
-                json.dump({
-                    "email": self.email,
-                    "app_password": self.app_password
-                }, file)
                 
         with open(DataUserController.resource_path(self.archive_name), "w") as file:
             json.dump({
@@ -68,7 +65,3 @@ class DataUserController(DataUserModel):
             raise FileNotFoundError("Usuário não encontrado! Tente criar um.")
 
         return data_user_json
-            
-        
-        
-        

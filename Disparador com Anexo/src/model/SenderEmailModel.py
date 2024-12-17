@@ -12,6 +12,7 @@ class SenderEmailModel(BaseModel):
     email_title: str = Field(..., description="Título do email")
     email_message: str = Field(..., description="Mensagem do email")
     whatsapp_redirect_number: str = Field(..., description="Número do whatsapp para redirecionamento")
+    redirect_message: str = Field(..., description="Mensagem para redirecionamento")
     list_columns: Optional[list[str]] = Field(..., description="Lista de colunas da planilha")
     
     class Config:

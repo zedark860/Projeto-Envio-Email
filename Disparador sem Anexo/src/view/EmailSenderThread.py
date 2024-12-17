@@ -46,7 +46,8 @@ class EmailSenderThread(QThread):
                     email_subject = self.data["email_subject"],
                     email_title = self.data["email_title"],
                     email_message = self.data["email_message"],
-                    whatsapp_redirect_number = self.data["whatsapp_redirect_number"]   
+                    whatsapp_redirect_number = self.data["whatsapp_redirect_number"],
+                    redirect_message=self.data["redirect_message"] 
                 ).send_emails(self.log_signal)
                 
             self.stop()

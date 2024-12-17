@@ -94,13 +94,6 @@ class EmailMainView(QWidget):
         self.titulo_html_edit = QLineEdit()  # Cria um campo de entrada para o título
         self.titulo_html_edit.setPlaceholderText('Título do E-mail')  # Define um texto de espaço reservado para o campo de título
         
-        # self.inserir_nome_button = QPushButton('Inserir Nome')
-        # self.inserir_nome_button.clicked.connect(self.inserir_nome_variavel)
-        # self.inserir_tipo_produto_button = QPushButton('Inserir Produto')
-        # self.inserir_tipo_produto_button.clicked.connect(self.inserir_produto_variavel)
-        # self.inserir_protocolo_button = QPushButton('Inserir Protocolo')
-        # self.inserir_protocolo_button.clicked.connect(self.inserir_protocolo_variavel)
-        
         self.limpar_logs_button = QPushButton('Limpar Logs')
         self.limpar_logs_button.clicked.connect(self.limpar_logs)
         
@@ -112,6 +105,10 @@ class EmailMainView(QWidget):
         self.redirecionar_whatsapp_edit = QLineEdit()
         self.redirecionar_whatsapp_edit.setPlaceholderText('O número precisa ser exatamente igual o do whatsapp')
         self.redirecionar_whatsapp_edit.textChanged.connect(self.validateRedirectNumber)
+        
+        self.mensagem_redirecionar_label = QLabel('Mensagem para redirecionar:')
+        self.mensagem_redirecionar_edit = QLineEdit()
+        self.mensagem_redirecionar_edit.setPlaceholderText('Mensagem para redirecionar')
         
         self.log_area = QTextEdit()
         self.log_area.setReadOnly(True)
@@ -146,11 +143,11 @@ class EmailMainView(QWidget):
         layout_assunto_titulo.addWidget(self.titulo_html_label)  # Adiciona o rótulo de título ao layout
         layout_assunto_titulo.addWidget(self.titulo_html_edit)  # Adiciona o campo de título ao layout
         
-        # Layout para os campos de botões inserir nome e produto
-        # layout_nome_e_prod_prot = QHBoxLayout()
-        # layout_nome_e_prod_prot.addWidget(self.inserir_nome_button)
-        # layout_nome_e_prod_prot.addWidget(self.inserir_tipo_produto_button)
-        # layout_nome_e_prod_prot.addWidget(self.inserir_protocolo_button)
+        layout_redirecionar_whatsapp = QVBoxLayout()
+        layout_redirecionar_whatsapp.addWidget(self.redirecionar_whatsapp_label)
+        layout_redirecionar_whatsapp.addWidget(self.redirecionar_whatsapp_edit)
+        layout_redirecionar_whatsapp.addWidget(self.mensagem_redirecionar_label)
+        layout_redirecionar_whatsapp.addWidget(self.mensagem_redirecionar_edit)
         
         layout_limpar_logs_iniciar_button = QHBoxLayout()
         layout_limpar_logs_iniciar_button.addWidget(self.limpar_logs_button)
@@ -167,8 +164,7 @@ class EmailMainView(QWidget):
         layout.addLayout(layout_assunto_titulo)  # Adiciona os campos de assunto e título ao layout
         layout.addWidget(self.mensagem_html_label)  # Adiciona o rótulo de mensagem ao layout
         layout.addWidget(self.mensagem_html_edit)  # Adiciona o campo de mensagem ao layout
-        layout.addWidget(self.redirecionar_whatsapp_label) # Adiciona o rótulo de redirecionar ao layout
-        layout.addWidget(self.redirecionar_whatsapp_edit) # Adiciona o campo de redirecionar ao layout
+        layout.addLayout(layout_redirecionar_whatsapp) # Adiciona o campo de numero e mensagem de redirecionamento ao layout
         
         layout.addWidget(QLabel('Logs:'))
         layout.addWidget(self.log_area)
@@ -257,7 +253,8 @@ class EmailMainView(QWidget):
             "email_subject": self.assunto_edit.text(),
             "email_title": self.titulo_html_edit.text(),
             "email_message": mensagem_html,
-            "whatsapp_redirect_number": self.redirecionar_whatsapp_edit.text()
+            "whatsapp_redirect_number": self.redirecionar_whatsapp_edit.text(),
+            "redirect_message": self.mensagem_redirecionar_edit.text()
         }
         
         self.iniciar_thread_logs(data)
@@ -274,6 +271,7 @@ class EmailMainView(QWidget):
             ('Título', self.titulo_html_edit.text()),
             ('Mensagem', self.mensagem_html_edit.toPlainText()),
             ('Número para redirecionar', self.redirecionar_whatsapp_edit.text()),
+            ('Mensagem de redirecionamento', self.mensagem_redirecionar_edit.text()),
         ]
 
         # Itera sobre os campos
@@ -301,11 +299,9 @@ class EmailMainView(QWidget):
             self.iniciar_button,
             self.mensagem_html_edit,
             self.intervalo_envio_edit,
-            # self.inserir_nome_button,
-            # self.inserir_tipo_produto_button,
-            # self.inserir_protocolo_button,
             self.limpar_logs_button,
             self.redirecionar_whatsapp_edit,
+            self.mensagem_redirecionar_edit,
         ]
         
         for _, item in enumerate(lista_desabilitar_ou_habilitar):
@@ -342,21 +338,3 @@ class EmailMainView(QWidget):
         webbrowser.open(
             "https://www.dropbox.com/scl/fi/86uil93uepe3sssd7yxm8/Enviar-E-mails.xlsx?rlkey=inogq1zqcm3xjame930yksm75&dl=1"
         )
-    
-       
-    # def inserir_nome_variavel(self) -> None:
-    #     # Insere uma variável para o nome na mensagem de e-mail
-    #     self.mensagem_html_edit.insertPlainText('{nome}')
-    #     self.titulo_html_edit.setText('{nome}')
-
-
-    # def inserir_produto_variavel(self) -> None:
-    #     # Insere uma variável para o produto na mensagem de e-mail
-    #     self.mensagem_html_edit.insertPlainText('{produto}')
-    #     self.titulo_html_edit.setText('{produto}')
-        
-
-    # def inserir_protocolo_variavel(self) -> None:
-    #     # Insere uma variável para o protocolo na mensagem de e-mail
-    #     self.mensagem_html_edit.insertPlainText('{protocolo}')
-    #     self.titulo_html_edit.setText('{protocolo}')
